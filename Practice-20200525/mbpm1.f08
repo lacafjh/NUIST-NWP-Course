@@ -26,108 +26,111 @@ program shen2
       call cmf(rm,f,d,cla,m,n)
       open(unit=11, file='rm.dat', iostat=ios, status="new", action="write")
       if ( ios /= 0 ) stop "Error opening file 'rm.dat'"
-      write(unit=11, 101, iostat=ios, advance='NO') variables
+      write(unit=11, 101, iostat=ios, advance='NO') rm
       if ( ios /= 0 ) stop "Write error in file unit 12"
       close(unit=11, iostat=ios, status="delete")
       if ( ios /= 0 ) stop "Error closing file unit 11"
  101  format(20f10.5)
-      open(1,file='f.dat',status='new')
-       write(1,103) f
-	close(1)
+      open(unit=12, file='f.dat', iostat=ios, status="new", action="write")
+      if ( ios /= 0 ) stop "Error opening file 'f.dat'"
+      write(unit=12, 103, iostat=ios, advance='NO') f
+      if ( ios /= 0 ) stop "Write error in file unit 12"
+	close(12)
  103  format(20e15.5)
 
-c  读入初始资料场 
-      open(2,file='za.dat',status='old')
-  	 read(2,102) za 
-      close(2)
+      !读入初始资料场 
+      open(unit=13, file='za.dat', iostat=ios, status="old", action="read")
+      if ( ios /= 0 ) stop "Error opening file 'za.dat'"
+      read(unit=13, 102, iostat=istat) za
+      if ( istat /= 0 ) stop "Read error in file unit 13"
+      close(13)
  102  format(20f6.0)
 
-c  为便于做图,将初始数据资料写入二进制数据文件h.grd中
+      !为便于做图,将初始数据资料写入二进制数据文件h.grd中
  	write(10) ((za(i,j),i=1,m),j=1,n)     
 
-ccccccccccccccccccccccc加入地转风子程序后此处需要修改cccccccccccccccccccccccccc
-c  计算地转风初值   
-c      call cgw(ua,va,za,rm,f,d,m,n)
-c      open(4,file='ua.dat',status='new')
-c      write(4,104) ua
-c      close(4)
-c      open(5,file='va.dat',status='new')
-c      write(5,104) va
-c      close(5)
-      open(4,file='ua.dat',status='old')
-      read(4,104) ua
-      close(4)
-      open(5,file='va.dat',status='old')
-      read(5,104) va
-      close(5)
- 104  format(20f10.5)
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     加入地转风子程序后此处需要修改
+!     计算地转风初值   
+!     call cgw(ua,va,za,rm,f,d,m,n)
+!     open(4,file='ua.dat',status='new')
+!     write(4,104) ua
+!     close(4)
+!     open(5,file='va.dat',status='new')
+!     write(5,104) va
+!     close(5)
+!     open(4,file='ua.dat',status='old')
+!     read(4,104) ua
+!     close(4)
+!     open(5,file='va.dat',status='old')
+!     read(5,104) va
+!     close(5)
+!104  format(20f10.5)
 
-c   边值传送子程序
-      call tbv(ub,vb,zb,ua,va,za,m,n)
-      call tbv(uc,vc,zc,ua,va,za,m,n)
+      !边值传送子程序
+      call tbv(ub, vb, zb, ua, va, za, m, n)
+      call tbv(uc, vc, zc, ua, va, za, m, n)
 
-c   开始预报  
+      !开始预报  
       do 10 na=1,2
        nb=0
-c   欧拉后差积分1小时
+      !欧拉后差积分1小时
       do 20 nn=1,6
        call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,dt,zo,m,n)
        call ti(ua,va,za,ub,vb,zb,ua,va,za,rm,f,d,dt,zo,m,n)
        nb=nb+1
   20  continue
 
-c   边界平滑子程序
+      !边界平滑子程序
       call ssbp(za,w,s,m,n)
       call ssbp(ua,w,s,m,n)
       call ssbp(va,w,s,m,n)
 
-c   前差积分半步
+      !前差积分半步
       call ti(ua,va,za,ua,va,za,ub,vb,zb,rm,f,d,c1,zo,m,n)
-c   中央差积分半步
+      !中央差积分半步
       call ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n)
       nb=nb+1
-c  数组传送子程序
+      !数组传送子程序
       call ta(ub,vb,zb,uc,vc,zc,m,n)
-c  中央差积分一步,共积分11小时
+      !中央差积分一步,共积分11小时
       do 30 nn=1,66
        call ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,c2,zo,m,n)
        nb=nb+1
-c  打印积分步数,na大循环步,nb小循环步
+      !打印积分步数,na大循环步,nb小循环步
        call pv(na,nb)
-c  判断是否积分12小时
+      !判断是否积分12小时
        if(nb.eq.nt2) go to 80
-c  判断是否做边界平滑
+      !判断是否做边界平滑
        if(nb/nt4*nt4.eq.nb) go to 40
        go to 50
   40   call ssbp(zc,w,s,m,n)
        call ssbp(uc,w,s,m,n)
        call ssbp(vc,w,s,m,n)
 
-c  判断是否做时间平滑
+      !判断是否做时间平滑
   50   if(nb.eq.nt5) go to 60
        if(nb.eq.nt5+1) go to 60
        go to 70
-c  时间平滑子程序
+      !时间平滑子程序
   60   call ts(ua,ub,uc,va,vb,vc,za,zb,zc,s,m,n)
 
-c  数组传送,为下一轮积分做准备
+      !数组传送,为下一轮积分做准备
   70   call ta(ua,va,za,ub,vb,zb,m,n)
        call ta(ub,vb,zb,uc,vc,zc,m,n)
   30  continue
 
-c  区域内点平滑
+      !区域内点平滑
   80  call ssip(zc,w,s,m,n,2)
       call ssip(uc,w,s,m,n,2)
       call ssip(vc,w,s,m,n,2)
 
-c  打印积分步数
+      !打印积分步数
       call pv(na,nb)
 
-c  数组传送,为后12小时的积分做准备
+      !数组传送,为后12小时的积分做准备
   10  call ta(ua,va,za,uc,vc,zc,m,n)
 
-c  存放预报结果
+      !存放预报结果
       open(6,file='zc.dat',status='new')
       write(6,102) zc
       close(6)
