@@ -1,34 +1,35 @@
-c      正压原始方程模式
-c      1985 10 29 by  Shen tongli
-c      m=20 为x方向格点数，n=16 为y方向格点数，d为网格距，rm为放大系数
-c      f为地转参数，w为工作数组，cla，clo分别为区域中心纬度和经度
-c      dt为时间步长，s为平滑系数
-c      ua，ub，uc分别为n-1，n，n+1时间层的x方向风速
-c      va，vb，vc分别为n-1，n，n+1时间层的y方向风速
-c      za，zb，zc分别为n-1，n，n+1时间层的位势高度
-c      na用于控制12小时的预报；nb用于记录时间积分步数；nt2=72用于判别
-c      是否积分12小时，是否该做内点平滑；nt4=6用于判定是否该做边界平滑；
-c      nt5用于判定是否该做时间平滑。 
-c      zo是为了减小重力惯性外波的波速，增加差分格式的稳定性而引入的位势高度。
-      program shen2
-	parameter(m=20,n=16,d=300000.0,cla=51.0,clo=118.0,dt=600.0)
-      dimension ua(m,n),va(m,n),za(m,n),ub(m,n),vb(m,n),zb(m,n),
-     *		uc(m,n),vc(m,n),zc(m,n),rm(m,n),f(m,n),w(m,n)
-      zo=2500.0
-      s=0.5
-      nt2=72
-      nt4=6
-      nt5=36
-      c1=dt/2.0
-      c2=dt*2.0
-c  为便于Grads做图而建立的位势高度场数据文件h.grd（包括初始场和预报场）    
-      open(10,file='h.grd',form='binary')         
+!正压原始方程模式
+!1985 10 29 by  Shen tongli
+!m=20 为x方向格点数，n=16 为y方向格点数，d为网格距，rm为放大系数
+!f为地转参数，w为工作数组，cla，clo分别为区域中心纬度和经度
+!dt为时间步长，s为平滑系数
+!ua，ub，uc分别为n-1，n，n+1时间层的x方向风速
+!va，vb，vc分别为n-1，n，n+1时间层的y方向风速
+!za，zb，zc分别为n-1，n，n+1时间层的位势高度
+!na用于控制12小时的预报；nb用于记录时间积分步数；nt2=72用于判别
+!是否积分12小时，是否该做内点平滑；nt4=6用于判定是否该做边界平滑；
+!nt5用于判定是否该做时间平滑。
+!zo是为了减小重力惯性外波的波速，增加差分格式的稳定性而引入的位势高度。
+program shen2
 
-c  计算放大系数和地转参数,并写入数据文件中
+      implicit none
+      integer                 :: m = 20, n = 16, nt2 = 72, nt4 = 6, nt5 = 36
+      real, parameter         :: d = 300000.0, cla = 51.0, clo = 118.0, dt = 600.0, &
+                                    zo = 2500.0, s = 0.5, c1 = dt / 2.0, c2 = dt * 2.0
+      real, dimension(m:n)    :: ua, va, za, ub, vb, zb, uc, vc, zc, rm, f, w
+
+      
+      !为便于Grads做图而建立的位势高度场数据文件h.grd（包括初始场和预报场）
+      open(unit=10, file='h.grd', form=’unformatted’, iostat=ios, status="new")
+      if ( ios /= 0 ) stop "Error opening file 'h.grd'"
+      !计算放大系数和地转参数，并写入数据文件中
       call cmf(rm,f,d,cla,m,n)
-      open(1,file='rm.dat',status='new')
-       write(1,101) rm
-      close(1)
+      open(unit=11, file='rm.dat', iostat=ios, status="new", action="write")
+      if ( ios /= 0 ) stop "Error opening file 'rm.dat'"
+      write(unit=11, 101, iostat=ios, advance='NO') variables
+      if ( ios /= 0 ) stop "Write error in file unit 12"
+      close(unit=11, iostat=ios, status="delete")
+      if ( ios /= 0 ) stop "Error closing file unit 11"
  101  format(20f10.5)
       open(1,file='f.dat',status='new')
        write(1,103) f
@@ -138,7 +139,8 @@ c  存放预报结果
       write(8,104) vc
       close(8)
       stop
-      end
+
+end program shen2
 
 c     computing map factors and coriolis parameter
 c     rk为圆锥常数,rlq为兰勃特投影映像平面上赤道到北极点的距离,a为地球半径
