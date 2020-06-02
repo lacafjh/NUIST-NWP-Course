@@ -17,7 +17,6 @@ program shen2
       real, parameter         :: d = 300000.0, cla = 51.0, clo = 118.0, dt = 600.0, &
                                     zo = 2500.0, s = 0.5, c1 = dt / 2.0, c2 = dt * 2.0
       real, dimension(m:n)    :: ua, va, za, ub, vb, zb, uc, vc, zc, rm, f, w
-
       
       !为便于Grads做图而建立的位势高度场数据文件h.grd（包括初始场和预报场）
       open(unit=10, file='h.grd', form=’unformatted’, iostat=ios, status="new")
@@ -27,15 +26,16 @@ program shen2
       open(unit=11, file='rm.dat', iostat=ios, status="new", action="write")
       if ( ios /= 0 ) stop "Error opening file 'rm.dat'"
       write(unit=11, 101, iostat=ios, advance='NO') rm
-      if ( ios /= 0 ) stop "Write error in file unit 12"
-      close(unit=11, iostat=ios, status="delete")
+      if ( ios /= 0 ) stop "Write error in file unit 11"
+      close(unit=11, iostat=ios, status="keep")
       if ( ios /= 0 ) stop "Error closing file unit 11"
  101  format(20f10.5)
       open(unit=12, file='f.dat', iostat=ios, status="new", action="write")
       if ( ios /= 0 ) stop "Error opening file 'f.dat'"
       write(unit=12, 103, iostat=ios, advance='NO') f
       if ( ios /= 0 ) stop "Write error in file unit 12"
-	close(12)
+      close(unit=12, iostat=ios, status="keep")
+      if ( ios /= 0 ) stop "Error closing file unit 12"
  103  format(20e15.5)
 
       !读入初始资料场 
@@ -43,28 +43,42 @@ program shen2
       if ( ios /= 0 ) stop "Error opening file 'za.dat'"
       read(unit=13, 102, iostat=istat) za
       if ( istat /= 0 ) stop "Read error in file unit 13"
-      close(13)
+      close(unit=13, iostat=ios, status="keep")
+      if ( ios /= 0 ) stop "Error closing file unit 13"
  102  format(20f6.0)
 
       !为便于做图,将初始数据资料写入二进制数据文件h.grd中
- 	write(10) ((za(i,j),i=1,m),j=1,n)     
+      write(unit=10, iostat=ios, advance='NO') ((za(i,j),i=1,m),j=1,n)     
+      if ( ios /= 0 ) stop "Write error in file unit 10"
 
-!     加入地转风子程序后此处需要修改
-!     计算地转风初值   
-!     call cgw(ua,va,za,rm,f,d,m,n)
-!     open(4,file='ua.dat',status='new')
-!     write(4,104) ua
-!     close(4)
-!     open(5,file='va.dat',status='new')
-!     write(5,104) va
-!     close(5)
-!     open(4,file='ua.dat',status='old')
-!     read(4,104) ua
-!     close(4)
-!     open(5,file='va.dat',status='old')
-!     read(5,104) va
-!     close(5)
-!104  format(20f10.5)
+      !加入地转风子程序后此处需要修改
+      !计算地转风初值   
+      call cgw(ua, va, za, rm, f, d, m, n)
+      open(unit=14, file='ua.dat', iostat=ios, status="new", action="write")
+      if ( ios /= 0 ) stop "Error opening file 'ua.dat'"
+      write(unit=14, 104, iostat=ios, advance='NO') ua
+      if ( ios /= 0 ) stop "Write error in file unit 14"
+      close(unit=14, iostat=ios, status="keep")
+      if ( ios /= 0 ) stop "Error closing file unit 14"
+      open(unit=15, file='va.dat', iostat=ios, status="new", action="write")
+      if ( ios /= 0 ) stop "Error opening file 'va.dat'"
+      write(unit=15, 104, iostat=ios, advance='NO') va
+      if ( ios /= 0 ) stop "Write error in file unit 15"
+      close(unit=15, iostat=ios, status="keep")
+      if ( ios /= 0 ) stop "Error closing file unit 15"
+      open(unit=14, file='ua.dat', iostat=ios, status="old", action="read")
+      if ( ios /= 0 ) stop "Error opening file 'ua.dat'"
+      read(unit=14, 104, iostat=istat) ua
+      if ( istat /= 0 ) stop "Read error in file unit 14"
+      close(unit=14, iostat=ios, status="keep")
+      if ( ios /= 0 ) stop "Error closing file unit 14"
+      open(unit=15, file='va.dat', iostat=ios, status="old", action="read")
+      if ( ios /= 0 ) stop "Error opening file 'va.dat'"
+      read(unit=15, 104, iostat=istat) va
+      if ( istat /= 0 ) stop "Read error in file unit 15"
+      close(unit=15, iostat=ios, status="keep")
+      if ( ios /= 0 ) stop "Error closing file unit 15"
+ 104  format(20f10.5)
 
       !边值传送子程序
       call tbv(ub, vb, zb, ua, va, za, m, n)
@@ -99,17 +113,17 @@ program shen2
       !打印积分步数,na大循环步,nb小循环步
        call pv(na,nb)
       !判断是否积分12小时
-       if(nb.eq.nt2) go to 80
+       if(nb == nt2) go to 80
       !判断是否做边界平滑
-       if(nb/nt4*nt4.eq.nb) go to 40
+       if(nb/nt4*nt4 == nb) go to 40
        go to 50
   40   call ssbp(zc,w,s,m,n)
        call ssbp(uc,w,s,m,n)
        call ssbp(vc,w,s,m,n)
 
       !判断是否做时间平滑
-  50   if(nb.eq.nt5) go to 60
-       if(nb.eq.nt5+1) go to 60
+  50   if(nb == nt5) go to 60
+       if(nb == nt5+1) go to 60
        go to 70
       !时间平滑子程序
   60   call ts(ua,ub,uc,va,vb,vc,za,zb,zc,s,m,n)
