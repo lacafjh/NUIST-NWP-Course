@@ -176,30 +176,30 @@ c   请同学编写地转风初值的子程序！！！应用书中（4.134）�
       subroutine cgw(ua,va,za,rm,f,d,m,n)
       dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
       do i=2,m-1
-          do j=2,n-1
-              ua(i,j)=-rm(i,j)*9.8*(za(i,j+1)-za(i,j-1))/2/d/f(i,j)
-              va(i,j)=rm(i,j)*9.8*(za(i+1,j)-za(i-1,j))/2/d/f(i,j)
-          enddo
+         do j=2,n-1
+             ua(i,j)=-rm(i,j)*9.8*(za(i,j+1)-za(i,j-1))/2/d/f(i,j)
+            va(i,j)=rm(i,j)*9.8*(za(i+1,j)-za(i-1,j))/2/d/f(i,j)
+         enddo
       enddo
       return
       end subroutine cgw
-      !subroutine cgw(ua,va,za,rm,f,d,m,n)
-      !   dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
-      !   do i=1,m
-      !       ua(i,1)=-rm(i,1)*9.8(za(i,2)-za(i,1))/d/f(i,1)
-      !       ua(i,n)=-rm(i,n)*9.8(za(i,n)-za(i,n-1))/d/f(i,n)
-      !       do j=2,q
-      !           ua(i,j)=-rm(i,j)*9.8(za(i,j+1)-za(i,j-1))/d/(f(i,j)*2)
-      !       enddo
-      !   enddo
-      !   do j=1,n
-      !       va(1,j)=-rm(1,j)*9.8(za(2,j))-za(1,j))/d/f(1,j)
-      !       va(m,j)=-rm(m,j)*9.8(za(m,j)-za(m-1,j))/d/f(m,j)
-      !       do j=2,q
-      !           va(i,j)=-rm(i,j)*9.8(za(i+1,j)-za(i-1,j))/d/(f(i,j)*2)
-      !       enddo
-      !   enddo
-      !   end subroutine cgw
+c      subroutine cgw(ua,va,za,rm,f,d,m,n)
+c         dimension ua(m,n),va(m,n),za(m,n),rm(m,n),f(m,n)
+c         do i=1,m
+c            ua(i,1)=-rm(i,1)*9.8(za(i,2)-za(i,1))/d/f(i,1)
+c            ua(i,n)=-rm(i,n)*9.8(za(i,n)-za(i,n-1))/d/f(i,n)
+c            do j=2,q
+c               ua(i,j)=-rm(i,j)*9.8(za(i,j+1)-za(i,j-1))/d/(f(i,j)*2)
+c            enddo
+c         enddo
+c         do j=1,n
+c            va(1,j)=-rm(1,j)*9.8(za(2,j))-za(1,j))/d/f(1,j)
+c            va(m,j)=-rm(m,j)*9.8(za(m,j)-za(m-1,j))/d/f(m,j)
+c            do j=2,q
+c               va(i,j)=-rm(i,j)*9.8(za(i+1,j)-za(i-1,j))/d/(f(i,j)*2)
+c            enddo
+c         enddo
+c      end subroutine cgw
       
 c     time integrations
       subroutine ti(ua,va,za,ub,vb,zb,uc,vc,zc,rm,f,d,dt,zo,m,n)
